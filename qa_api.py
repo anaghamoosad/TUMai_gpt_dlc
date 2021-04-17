@@ -5,12 +5,19 @@ import configuration
 # key = "your api key"
 
 
+class Answer:
+    def __init__(self, answer="", additional_info="", next_question=""):
+        answer = answer
+        additional = additional_info
+        follow_up = next_question
+
+
 def create_jsonlfile():
     #Paste the API KEY
     #openai.api_key ="Your api key"
     openai.api_key = configuration.key
     # Create the documents file as jsonl file
-    document_path = "jsonlfiles/gpt3.jsonl"
+    document_path = "jsonlfiles/finaldoc.jsonl"
     file = openai.File.create(file=open(document_path), purpose='answers')
     return file
 
@@ -32,7 +39,7 @@ def check_scores(user_question, response_object, score_threshold=0, low_threshol
     :param low_threshold: threshold for responses with low confidence
     :return:
     """
-
+    answer_object = Answer()
     # go through response selected documents
     scores = []
     for document in response_object.selected_documents:
@@ -49,11 +56,14 @@ def check_scores(user_question, response_object, score_threshold=0, low_threshol
             chatbot_response = look_alternative_document(response_object)
         else:
             # it could be the one with the maximum score but the one with higher score is not always on-point
-            chatbot_response = response_object.answers[0]
+            answer_object.answer = response_object.answers[0]
+            # find document with top score
+            answer_object.additional = response_object.selected_documents[0].text
+            # but also include the documents text
     else:
         chatbot_response = "I don't understand the question"
 
-    return chatbot_response
+    return answer_object
 
 
 def generateAnswers(user_question,jsonl_file,temp = 0.1,maxtoken = 20):
@@ -77,7 +87,7 @@ def generateAnswers(user_question,jsonl_file,temp = 0.1,maxtoken = 20):
 
     return response
    
-   except :
+   except:
        response ={"answers": ["Apologies, I could not find an answer for your query. Please ask questions related to"
                               " compliance or please rephrase your question"],
                   "file": file}
@@ -88,10 +98,11 @@ print("Creating file !")
 file =create_jsonlfile() 
 print("File created!! File id: ", file["id"])
 
-user_ques =input("Chatbot :Enter your question :")
+user_ques =input("Chatbot - Enter your question :")
 response = generateAnswers(user_ques, file)
-check_scores(user_ques, response)
-print("Chatbot Answer :", response["answers"][0])
-
-
-
+full_answer = check_scores(user_ques, response)
+# print("Chatbot Answer :", response["answers"][0])
+print("Chatbot Answer :", full_answer.answer)
+if full_answer.additional:
+    print("Additionally:\n")
+    print(full_answer.additional)

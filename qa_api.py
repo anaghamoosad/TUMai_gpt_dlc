@@ -1,13 +1,15 @@
 import os
 import openai
-import config
+import configuration
+# add a configuration.py file with the line:
+# key = "your api key"
 
 
 def create_jsonlfile():
     #Paste the API KEY
     #openai.api_key ="Your api key"
-    openai.api_key = config.key
-    #Create the documents file as jsonl file
+    openai.api_key = configuration.key
+    # Create the documents file as jsonl file
     document_path = "jsonlfiles/gpt3.jsonl"
     file = openai.File.create(file=open(document_path), purpose='answers')
     return file

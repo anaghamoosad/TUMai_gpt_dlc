@@ -99,7 +99,8 @@ def generateAnswers(user_question, jsonl_file, temp=0.4, maxtoken=35):
    except:
        response ={"answers": ["Apologies, I could not find an answer for your query. Please ask questions related to"
                               " compliance or please rephrase your question"],
-                  "file": file}
+                  "file": file,
+                  "error": 1}
        return response
 
 
@@ -249,7 +250,6 @@ def run_chatbot(n_clicks, n_submit, user_input, chat_history):
 
     #user_ques =input("Chatbot - Enter your question :")
     response = generateAnswers(model_input, file)
-    full_answer = check_scores(model_input, response)
     # # print("Chatbot Answer :", response["answers"][0])
     # print("Chatbot Answer :", full_answer.answer)
     # if full_answer.additional:
@@ -265,9 +265,14 @@ def run_chatbot(n_clicks, n_submit, user_input, chat_history):
     # )
     #model_output = response.choices[0].text.strip()
     #model_output=response["answers"][0]
-    model_output = full_answer.answer
-    if full_answer.additional:
-        model_output += "<\br>"+full_answer.additional
+    if not (type(response) is dict):
+        full_answer = check_scores(model_input, response)
+
+        model_output = full_answer.answer
+        if full_answer.additional:
+            model_output += "<\br>"+full_answer.additional
+    else:
+        model_output = response["answers"][0]
     chat_history += f"{model_output}<split>"
 
     return chat_history, None

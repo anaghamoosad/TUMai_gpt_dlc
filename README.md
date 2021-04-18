@@ -13,7 +13,8 @@ Collaborator:
 # Digital Legal and Compliance Officer Chatbot
 
 ## This is the screenshot of chatbot:
-![legal model](https://user-images.githubusercontent.com/20498499/115143627-230b8d00-a066-11eb-89b6-8fc82de06b16.png)
+![Solution Screenshot](https://user-images.githubusercontent.com/24217587/115144522-64dc0980-a04d-11eb-9009-6391da2a11bf.png)
+
 
 ## Instructions
 

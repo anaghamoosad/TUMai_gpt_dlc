@@ -20,7 +20,7 @@ Collaborator:
 To get started, first clone this repo:
 ```
 git clone https://github.com/anaghamoosad/TUMai_gpt_dlc.git
-cd Dash_UI
+
 ```
 
 Install all the requirements:
@@ -31,6 +31,7 @@ pip install -r requirements.txt
 
 You can now run the app:
 ```
+cd Dash_UI
 python chatbot_dash.py
 ```
 

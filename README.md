@@ -35,3 +35,11 @@ python chatbot_dash.py
 ```
 
 and visit http://127.0.0.1:8050/.
+
+## Branches
+
+To access the work in progress solution based on scores:
+
+```
+git checkout score_driven
+```

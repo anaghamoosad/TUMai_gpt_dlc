@@ -1,5 +1,3 @@
-import os
-import time
 from textwrap import dedent
 
 import dash
@@ -7,9 +5,9 @@ import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
-from PIL import Image
 import openai
-#import configuration
+import configuration
+from operator import itemgetter
 
 class Answer:
     def __init__(self, answer="", additional_info="", next_question=""):
@@ -21,7 +19,7 @@ class Answer:
 def create_jsonlfile():
     #Paste the API KEY
     # openai.api_key = "YOUR API"
-    #openai.api_key = configuration.key
+    openai.api_key = configuration.key
     # Create the documents file as jsonl file
     document_path = "jsonlfiles/finaldoc.jsonl"
     file = openai.File.create(file=open(document_path), purpose='answers')
@@ -51,6 +49,9 @@ def check_scores(user_question, response_object, score_threshold=0, low_threshol
         # select max score
         scores.append(document.score)
     max_score = max(scores)
+    sorted_documents = sorted(response_object.selected_documents, key=itemgetter('score'), reverse=True)
+    top_document = sorted_documents[0]
+    max_score = top_document.score
     print("max_score: {0}".format(str(max_score)))
     if max_score > score_threshold:
         # look for low confidence answers, it means gpt-3 generates an answer but the similarity to documents is low
@@ -59,11 +60,14 @@ def check_scores(user_question, response_object, score_threshold=0, low_threshol
             # response = generateAnswers(user_question, temp=response_object.temperature + 1)
             print("low confidence")
             chatbot_response = look_alternative_document(response_object)
+            answer_object.answer = response_object.answers[0]
+            answer_object.additional = top_document.text
+            #sort elements by score
         else:
             # it could be the one with the maximum score but the one with higher score is not always on-point
             answer_object.answer = response_object.answers[0]
             # find document with top score
-            answer_object.additional = response_object.selected_documents[0].text
+            answer_object.additional = ""
             # but also include the documents text
     else:
         chatbot_response = "I don't understand the question"
@@ -71,7 +75,7 @@ def check_scores(user_question, response_object, score_threshold=0, low_threshol
     return answer_object
 
 
-def generateAnswers(user_question,jsonl_file,temp = 0.1,maxtoken = 20):
+def generateAnswers(user_question, jsonl_file, temp=0.4, maxtoken=35):
    
    try:
     # Api for creating answers
@@ -82,11 +86,11 @@ def generateAnswers(user_question,jsonl_file,temp = 0.1,maxtoken = 20):
         
         file=jsonl_file["id"], 
         examples_context="Corruption is dishonest or illegal behavior, especially by people in power, typically involving bribery. It can also include other acts, such as fraud, embezzlement, favoritism, and nepotism. The most common form of corruption is bribery.For further information see Section G1 of the BCG.**Additional Information** : For further information, also about what the term gifts of money covers, see [Compliance Handbook](https://webbooks.siemens.com/public/LC/chen/index.htm?n=Part-1-Activity-Fields,A.-Anti-Corruption", 
-        examples=[["Can I take my client on a holiday?", "No, you cannot take your client on a holiday .**Additional Information** For further information, see [Compliance Handbook](https://webbooks.siemens.com/public/LC/chen/index.htm?n=Part-1-Activity-Fields,A.-Anti-Corruption"],["What is corruption?", "Corruption is dishonest or illegal behavior, especially by people in power, typically involving bribery **Additional Information** For further information , see [Compliance Handbook](https://webbooks.siemens.com/public/LC/chen/index.htm?n=Part-1-Activity-Fields,A.-Anti-Corruption"],["What is bribery?","Bribery  is the act of offering, promising, or giving money, gifts, or other benefit to a public official or public or private employee with the aim of receiving improper advantages. Bribery is a criminal offense worldwide. Siemens does not tolerate any form of bribery. **Additional Information** For further information check [BCG](https://compliance.siemens.cloud/bcg/responsibility.html#g)"],["What are the rules for cash payments?","Payments with Cash are specifically regulated in many jurisdictions according to money laundering or other laws. The governance for Anti-Money Laundering lies with Legal & Compliance (LC CO RFC / LC CO SFS) and supports the BizCos by appropriate processes. **Additional Information** More information can be found [Here](https://webbooks.siemens.com/public/LC/chen/index.htm?n=Part-1-Activity-Fields,C.-Anti-Money-Laundering-(AML),5.-Cash-Handling-Rules)"],
-        ["Was ist ein Geschenk?", "Ein Geschenk ist eine freiwillige Überweisung von Geld oder anderen Vorteilen an Dritte ohne Gegenleistung. ** Zusätzliche Informationen ** Weitere Informationen finden Sie im [Compliance-Handbuch](https://webbooks.siemens.com/public/LC/chen/index.htm?n=Part-1-Activity-Fields,A.-Anti-Corruption"]],
+        examples=[["Can I take my client on a holiday?", "No, you cannot take your client on a holiday .**Additional Information** For further information, see [Compliance Handbook](https://webbooks.siemens.com/public/LC/chen/index.htm?n=Part-1-Activity-Fields,A.-Anti-Corruption"],["What is corruption?", "Corruption is dishonest or illegal behavior, especially by people in power, typically involving bribery **Additional Information** For further information , see [Compliance Handbook](https://webbooks.siemens.com/public/LC/chen/index.htm?n=Part-1-Activity-Fields,A.-Anti-Corruption"],["What is bribery?","Bribery  is the act of offering, promising, or giving money, gifts, or other benefit to a public official or public or private employee with the aim of receiving improper advantages. Bribery is a criminal offense worldwide. Siemens does not tolerate any form of bribery. **Additional Information** For further information check [BCG](https://compliance.siemens.cloud/bcg/responsibility.html#g)"],["What are the rules for cash payments?","Payments with Cash are specifically regulated in many jurisdictions according to money laundering or other laws. The governance for Anti-Money Laundering lies with Legal & Compliance (LC CO RFC / LC CO SFS) and supports the BizCos by appropriate processes. **Additional Information** More information can be found [Here](https://webbooks.siemens.com/public/LC/chen/index.htm?n=Part-1-Activity-Fields,C.-Anti-Money-Laundering-(AML),5.-Cash-Handling-Rules)"]],
         max_rerank=10,
         max_tokens=maxtoken,
         temperature=temp,
+        logit_bias={"3":-100},
         stop=["\n"]
     )
 
@@ -239,13 +243,13 @@ def run_chatbot(n_clicks, n_submit, user_input, chat_history):
     # First add the user input to the chat history
     chat_history += f"You: {user_input}<split>{name}:"
 
-    model_input = prompt + chat_history.replace("<split>", "\n")
-
+    # model_input = prompt + chat_history.replace("<split>", "\n")
+    model_input = user_input
    
 
     #user_ques =input("Chatbot - Enter your question :")
     response = generateAnswers(model_input, file)
-    #full_answer = check_scores(model_input, response)
+    full_answer = check_scores(model_input, response)
     # # print("Chatbot Answer :", response["answers"][0])
     # print("Chatbot Answer :", full_answer.answer)
     # if full_answer.additional:
@@ -260,7 +264,10 @@ def run_chatbot(n_clicks, n_submit, user_input, chat_history):
     #     temperature=0.9,
     # )
     #model_output = response.choices[0].text.strip()
-    model_output=response["answers"][0]
+    #model_output=response["answers"][0]
+    model_output = full_answer.answer
+    if full_answer.additional:
+        model_output += "<\br>"+full_answer.additional
     chat_history += f"{model_output}<split>"
 
     return chat_history, None

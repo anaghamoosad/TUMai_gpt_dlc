@@ -1,6 +1,7 @@
-import os
 import openai
-import configuration
+from Dash_UI import configuration
+
+
 # add a configuration.py file with the line:
 # key = "your api key"
 
@@ -66,7 +67,7 @@ def check_scores(user_question, response_object, score_threshold=0, low_threshol
     return answer_object
 
 
-def generateAnswers(user_question,jsonl_file,temp = 0.1,maxtoken = 20):
+def generateAnswers(user_question, jsonl_file, temp=0.1, maxtoken = 20):
    
    try:
     # Api for creating answers
@@ -95,10 +96,10 @@ def generateAnswers(user_question,jsonl_file,temp = 0.1,maxtoken = 20):
 
 
 print("Creating file !")
-file =create_jsonlfile() 
+file = create_jsonlfile()
 print("File created!! File id: ", file["id"])
 
-user_ques =input("Chatbot - Enter your question :")
+user_ques = input("Chatbot - Enter your question :")
 response = generateAnswers(user_ques, file)
 full_answer = check_scores(user_ques, response)
 # print("Chatbot Answer :", response["answers"][0])
